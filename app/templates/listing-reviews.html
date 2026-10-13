@@ -1,0 +1,63 @@
+{% extends "authenticated-base.html" %}
+{% block title %}Reviews for {{ listing.title }} | Stay 4 Students{% endblock %}
+
+{% block subpage_content %}
+<main class="workflow-main listing-detail reviews-page">
+  <a class="detail-back" href="{{ url_for('listing_detail', accommodation_id=listing.accommodationId) }}">
+    <svg class="detail-back-icon" aria-hidden="true" viewBox="0 0 24 24" focusable="false">
+      <path d="M19 12H5m0 0 7 7m-7-7 7-7"></path>
+    </svg>
+    Back to {{ listing.title }}
+  </a>
+
+  <section class="review-listing-summary" aria-labelledby="review-listing-title">
+    {% if listing.imageUrl %}
+    <img class="review-listing-image" src="{{ listing.imageUrl }}" alt="{{ listing.title }}">
+    {% else %}
+    <img class="review-listing-image" src="{{ url_for('static', path='img/apartment-placeholder.svg') }}" alt="Sample apartment illustration for {{ listing.title }}">
+    {% endif %}
+    <div>
+      <p class="landing-kicker">Tenant reviews</p>
+      <h1 id="review-listing-title">{{ listing.title }}</h1>
+      {% if average_rating is not none %}
+      <p class="review-average">
+        <strong class="review-average-value">{{ "%.1f"|format(average_rating) }}</strong>
+        <span class="review-stars" aria-hidden="true">
+          {% for star in range(1, 6) %}{{ "★" if star <= average_rating else "☆" }}{% endfor %}
+        </span>
+        <span class="review-average-label">average out of 5</span>
+      </p>
+      {% else %}
+      <p class="review-average">No ratings yet</p>
+      {% endif %}
+    </div>
+    <a
+      class="btn-landing btn-landing-primary review-detail-action"
+      href="{{ url_for('listing_detail', accommodation_id=listing.accommodationId) }}"
+    >
+      View listing details
+    </a>
+  </section>
+
+  {% if reviews %}
+  <section class="review-list" aria-label="Reviews for {{ listing.title }}">
+    {% for review in reviews %}
+    <article class="review-card">
+      <div class="review-avatar" aria-hidden="true"></div>
+      <div class="review-card-content">
+        <div class="review-stars" role="img" aria-label="{{ review.rating }} out of 5 stars">
+          {% for star in range(1, 6) %}{{ "★" if star <= review.rating else "☆" }}{% endfor %}
+        </div>
+        <p>{{ review.comment }}</p>
+      </div>
+    </article>
+    {% endfor %}
+  </section>
+  {% else %}
+  <div class="empty-state">
+    <h2>No reviews yet</h2>
+    <p>There are no tenant reviews for this accommodation yet.</p>
+  </div>
+  {% endif %}
+</main>
+{% endblock %}

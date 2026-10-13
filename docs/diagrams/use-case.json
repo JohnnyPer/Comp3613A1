@@ -1,0 +1,33 @@
+{
+  "system": "Student Accommodation",
+  "actors": [
+    {"name": "Public", "side": "left"},
+    {"name": "Admin", "side": "right"}
+  ],
+  "use_cases": [
+    {
+      "name": "Explore listings",
+      "actors": ["Public"],
+      "includes": ["Search listings", "View listing details"]
+    },
+    {
+      "name": "Search listings"
+    },
+    {
+      "name": "View listing details"
+    },
+    {
+      "name": "Read reviews",
+      "actors": ["Public"],
+      "extends": ["View listing details"]
+    },
+    {
+      "name": "View tenants",
+      "actors": ["Admin"],
+      "includes": ["Search tenants"]
+    },
+    {
+      "name": "Search tenants"
+    }
+  ]
+}

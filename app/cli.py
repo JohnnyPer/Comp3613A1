@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+from decimal import Decimal
 from pathlib import Path
 
 
@@ -47,14 +48,20 @@ def cmd_init(args: argparse.Namespace) -> None:
 
 
 def cmd_seed(args: argparse.Namespace) -> None:
-    """Insert demo users.
+    """Insert demo users and idempotent Student Accommodation sample data.
 
     bob / bobpass       (regular_user)
     admin / adminpass   (admin)
     """
+    from sqlmodel import select
+
     from app.database import ensure_db_and_tables, get_cli_session
+    from app.models.accommodation import Accommodation
+    from app.models.review import Review
+    from app.models.tenant import Tenant
     from app.repositories.user import UserRepository
     from app.schemas.user import AdminCreate, RegularUserCreate
+    from app.services.auth_service import AuthService
     from app.utilities.security import encrypt_password
 
     _ensure_models_loaded()
@@ -69,6 +76,7 @@ def cmd_seed(args: argparse.Namespace) -> None:
     skipped = 0
     with get_cli_session() as session:
         repo = UserRepository(session)
+        auth_service = AuthService(repo)
         for username, email, password, role in demo_users:
             if repo.get_by_username(username):
                 print(f"  skip  {username} (already exists)")
@@ -86,7 +94,120 @@ def cmd_seed(args: argparse.Namespace) -> None:
             print(f"  create {username} ({role})")
             created += 1
 
+        admin = repo.get_by_username("admin")
+        if admin is None or admin.id is None:
+            raise RuntimeError("Admin demo user was not available after seeding.")
+
+        tenant_profiles = [
+            ("Sample Tenant 1", "tenant01", "tenant01@example.com", "tenant01pass", "555-0101"),
+            ("Sample Tenant 2", "tenant02", "tenant02@example.com", "tenant02pass", "555-0102"),
+            ("Sample Tenant 3", "tenant03", "tenant03@example.com", "tenant03pass", "555-0103"),
+            ("Sample Tenant 4", "tenant04", "tenant04@example.com", "tenant04pass", "555-0104"),
+            ("Sample Tenant 5", "tenant05", "tenant05@example.com", "tenant05pass", "555-0105"),
+            ("Sample Tenant 6", "tenant06", "tenant06@example.com", "tenant06pass", "555-0106"),
+            ("Sample Tenant 7", "tenant07", "tenant07@example.com", "tenant07pass", "555-0107"),
+            ("Sample Tenant 8", "tenant08", "tenant08@example.com", "tenant08pass", "555-0108"),
+            ("Sample Tenant 9", "tenant09", "tenant09@example.com", "tenant09pass", "555-0109"),
+            ("Sample Tenant 10", "tenant10", "tenant10@example.com", "tenant10pass", "555-0110"),
+        ]
+        tenants_created = 0
+        tenants: list[Tenant] = []
+        for name, username, email, password, phone in tenant_profiles:
+            tenant_user = repo.get_by_username(username)
+            if tenant_user is None:
+                tenant_user = auth_service.register_user(username, email, password)
+            if tenant_user.id is None:
+                raise RuntimeError(f"Sample tenant user {username} has no database id.")
+            tenant = session.exec(
+                select(Tenant).where(Tenant.userId == tenant_user.id)
+            ).one_or_none()
+            if tenant is None:
+                tenant = Tenant(
+                    userId=tenant_user.id,
+                    name=name,
+                    email=email,
+                    phone=phone,
+                    status="active",
+                )
+                session.add(tenant)
+                tenants_created += 1
+            tenants.append(tenant)
+
+        session.flush()
+        if any(tenant.tenantId is None for tenant in tenants):
+            raise RuntimeError("A sample tenant profile was not assigned a database id.")
+
+        locations = ("North Campus", "West Campus", "Central Campus", "South Campus")
+        demo_listings = [
+            (
+                f"Apartment {number}",
+                Decimal("3000.00") + Decimal("500.00") * (number - 1),
+                locations[(number - 1) % len(locations)],
+            )
+            for number in range(1, 21)
+        ]
+        listings_by_title = {
+            listing.title: listing
+            for listing in session.exec(select(Accommodation)).all()
+        }
+        listings_created = 0
+        listings: list[Accommodation] = []
+        for title, monthly_cost, location in demo_listings:
+            listing = listings_by_title.get(title)
+            if listing is None:
+                listing = Accommodation(
+                    title=title,
+                    description=f"Student accommodation near {location}.",
+                    monthlyCost=monthly_cost,
+                    location=location,
+                    status="available",
+                    imageUrl="",
+                    ownerId=admin.id,
+                )
+                session.add(listing)
+                listings_created += 1
+            elif listing.location == "Location to be added":
+                listing.location = location
+                listing.description = f"Student accommodation near {location}."
+            listings.append(listing)
+
+        session.flush()
+        if any(listing.accommodationId is None for listing in listings):
+            raise RuntimeError("A sample accommodation was not assigned a database id.")
+
+        existing_reviews = {
+            (review.accommodationId, review.tenantId)
+            for review in session.exec(select(Review)).all()
+        }
+        review_comments = (
+            "Convenient location and a comfortable place to stay.",
+            "Good value and close to campus.",
+            "The apartment was clean and easy to settle into.",
+            "A practical option for student housing.",
+            "Helpful location with the essentials nearby.",
+        )
+        reviews_created = 0
+        for listing in listings:
+            for index, tenant in enumerate(tenants):
+                review_key = (listing.accommodationId, tenant.tenantId)
+                if review_key in existing_reviews:
+                    continue
+                session.add(
+                    Review(
+                        accommodationId=listing.accommodationId,
+                        tenantId=tenant.tenantId,
+                        rating=(5, 4, 5, 4, 5)[index % 5],
+                        comment=review_comments[index % len(review_comments)],
+                    )
+                )
+                existing_reviews.add(review_key)
+                reviews_created += 1
+        session.commit()
+
     print(f"Seed done — created {created}, skipped {skipped}.")
+    print(f"Tenant seed done — created {tenants_created}.")
+    print(f"Listing seed done — created {listings_created} (20 sample listings total).")
+    print(f"Review seed done — created {reviews_created} (10 per sample listing).")
     print("Login with bob/bobpass or admin/adminpass")
 
 

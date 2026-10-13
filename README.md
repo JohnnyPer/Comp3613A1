@@ -95,6 +95,8 @@ python manage.py init
 | `bob`    | `bobpass`   | regular_user |
 | `admin`  | `adminpass` | admin        |
 
+`init` and `seed` also create 20 sample accommodation listings, 10 sample tenant profiles, and 10 reviews for each listing (200 reviews total). Sample tenant accounts are `tenant01` through `tenant10`; each password is `tenantNNpass` (for example, `tenant01pass`).
+
 Flags:
 
 ```bash

@@ -1,0 +1,52 @@
+{% extends "authenticated-base.html" %}
+{% block title %}Explore listings | Stay 4 Students{% endblock %}
+
+{% block subpage_content %}
+  <main class="workflow-main{% if request.query_params.get('view') == 'reviews' %} review-selection{% endif %}">
+    <div class="workflow-heading">
+      <p class="landing-kicker">Your next place starts here</p>
+      <h1>{% if request.query_params.get('view') == 'reviews' %}Choose a listing to read reviews{% else %}Explore student listings{% endif %}</h1>
+      <p>Search by accommodation name or location and compare monthly costs.</p>
+    </div>
+
+    <form class="listing-search" method="get" action="{{ url_for('explore_listings') }}">
+      {% if request.query_params.get('view') == 'reviews' %}
+      <input type="hidden" name="view" value="reviews">
+      {% endif %}
+      <label class="visually-hidden" for="listing-search">Search listings by name or location</label>
+      <input id="listing-search" name="search" type="search" value="{{ search }}" placeholder="Search by title or location">
+      <button class="btn-landing btn-landing-primary" type="submit">Search</button>
+    </form>
+
+    {% if listings %}
+    <section class="listing-grid" aria-label="Accommodation listings">
+      {% for listing in listings %}
+      <article class="listing-card{% if request.query_params.get('view') == 'reviews' %} review-selection-card{% else %} explore-listing-card{% endif %}">
+        {% if listing.imageUrl %}
+        <img class="listing-image" src="{{ listing.imageUrl }}" alt="{{ listing.title }}">
+        {% else %}
+        <img class="listing-image" src="{{ url_for('static', path='img/apartment-placeholder.svg') }}" alt="Sample apartment illustration for {{ listing.title }}">
+        {% endif %}
+        <div class="listing-card-body">
+          <div>
+            <h2>{{ listing.title }}</h2>
+            <p class="listing-location">{{ listing.location }}</p>
+            <p class="listing-price">${{ "%.2f"|format(listing.monthlyCost) }}/month</p>
+          </div>
+          {% if request.query_params.get('view') == 'reviews' %}
+          <a class="btn-landing btn-landing-primary review-select-action" href="{{ url_for('listing_reviews', accommodation_id=listing.accommodationId) }}">Read reviews</a>
+          {% else %}
+          <a class="btn-landing btn-landing-primary explore-view-action" href="{{ url_for('listing_detail', accommodation_id=listing.accommodationId) }}">View</a>
+          {% endif %}
+        </div>
+      </article>
+      {% endfor %}
+    </section>
+    {% else %}
+    <div class="empty-state">
+      <h2>No listings found</h2>
+      <p>Try a different title or location search.</p>
+    </div>
+    {% endif %}
+  </main>
+{% endblock %}

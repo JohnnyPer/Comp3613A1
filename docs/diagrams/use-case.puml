@@ -1,0 +1,34 @@
+@startuml
+!pragma layout smetana
+skinparam shadowing false
+skinparam actorBorderColor #1B365D
+skinparam actorFontColor #1E232D
+skinparam usecaseBackgroundColor #FFFFFF
+skinparam usecaseBorderColor #1B365D
+skinparam usecaseFontColor #1E232D
+skinparam rectangleBorderColor #1B365D
+skinparam rectangleBackgroundColor #F8FAFC
+skinparam arrowColor #1B365D
+
+actor "Public" as Public
+
+rectangle "Student Accommodation" {
+  usecase "Explore listings" as Explore_listings
+  usecase "Search listings" as Search_listings
+  usecase "View listing details" as View_listing_details
+  usecase "Read reviews" as Read_reviews
+  usecase "View tenants" as View_tenants
+  usecase "Search tenants" as Search_tenants
+}
+
+actor "Admin" as Admin
+
+Public --> Explore_listings
+Explore_listings ..> Search_listings : <<include>>
+Explore_listings ..> View_listing_details : <<include>>
+Public --> Read_reviews
+Read_reviews ..> View_listing_details : <<extend>>
+View_tenants <-- Admin
+View_tenants ..> Search_tenants : <<include>>
+
+@enduml

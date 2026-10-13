@@ -1,0 +1,7 @@
+<nav class="workflow-nav" aria-label="Main workflows">
+  <a href="{{ url_for('explore_listings') }}">Explore Listings</a>
+  <a href="{{ url_for('explore_listings') }}?view=reviews">Read Reviews</a>
+  {% if current_user and current_user.role == "admin" %}
+  <a href="{{ url_for('admin_home_view') }}">View Tenants</a>
+  {% endif %}
+</nav>

@@ -1,9 +1,64 @@
 {% extends "authenticated-base.html" %}
-{% block title %}Admin{% endblock %}
+{% block title %}View tenants | Stay 4 Students{% endblock %}
 
 {% block subpage_content %}
-<div class="container-fluid py-2">
-  <h1 class="h4 mb-2">Admin</h1>
-  <p class="text-muted mb-0">Admin workflow screens replace this shell in Phase 5 implement.</p>
+<div class="container-fluid py-3">
+  <h1 class="h3 mb-4">View tenants</h1>
+
+  <div class="d-flex flex-wrap gap-3 mb-4" aria-label="Tenant totals">
+    <section class="card p-3" aria-label="Total tenants">
+      <h2 class="h6 mb-1">Total Tenants</h2>
+      <p class="h3 mb-0">{{ total_count }}</p>
+    </section>
+    <section class="card p-3" aria-label="Active tenants">
+      <h2 class="h6 mb-1">Active Tenants</h2>
+      <p class="h3 mb-0">{{ active_count }}</p>
+    </section>
+  </div>
+
+  <form class="mb-3" method="get" action="{{ url_for('admin_home_view') }}">
+    <label class="visually-hidden" for="tenant-search">Search tenants</label>
+    <div class="input-group" style="max-width: 34rem;">
+      <input
+        id="tenant-search"
+        class="form-control"
+        type="search"
+        name="search"
+        value="{{ search }}"
+        placeholder="Search tenants"
+      >
+      <button class="btn btn-outline-secondary" type="submit">Search</button>
+    </div>
+  </form>
+
+  {% if rows %}
+  <div class="table-responsive">
+    <table class="table align-middle">
+      <thead>
+        <tr>
+          <th scope="col">Name</th>
+          <th scope="col">Email</th>
+          <th scope="col">Phone</th>
+          <th scope="col">Apartment</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for tenant, apartment in rows %}
+        <tr>
+          <td>{{ tenant.name }}</td>
+          <td>{{ tenant.email }}</td>
+          <td>{{ tenant.phone }}</td>
+          <td>{{ apartment or "No current booking" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <h2 class="h5">No tenants found</h2>
+    <p class="mb-0">Try a different name, email, or phone search.</p>
+  </div>
+  {% endif %}
 </div>
 {% endblock %}
